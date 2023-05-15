@@ -120,7 +120,7 @@ pub fn handle_input_events() {
 unsafe extern "system" fn keybd_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     if KEYBD_BINDS.lock().unwrap().is_empty() {
         unset_hook(&*KEYBD_HHOOK);
-    } else if w_param as u32 == WM_KEYDOWN || w_param as u32 == WM_SYSKEYDOWN && ((*(l_param as *const KBDLLHOOKSTRUCT)).flags & LLKHF_INJECTED) != 1 {
+    } else if (w_param as u32 == WM_KEYDOWN || w_param as u32 == WM_SYSKEYDOWN) && ((*(l_param as *const KBDLLHOOKSTRUCT)).flags & LLKHF_INJECTED) == 0 {
         if let Some(bind) = KEYBD_BINDS
             .lock()
             .unwrap()
@@ -128,14 +128,12 @@ unsafe extern "system" fn keybd_proc(code: c_int, w_param: WPARAM, l_param: LPAR
                 (*(l_param as *const KBDLLHOOKSTRUCT)).vkCode,
             )))
         {
-            eprintln!("{}", (*(l_param as *const KBDLLHOOKSTRUCT)).flags);
             match bind {
                 Bind::NormalBind(cb) => {
                     let cb = Arc::clone(cb);
                     spawn(move || cb());
                 }
                 Bind::BlockBind(cb) => {
-                    
                     let cb = Arc::clone(cb);
                     spawn(move || cb());
                     return 1;

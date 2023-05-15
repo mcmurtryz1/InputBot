@@ -18,6 +18,9 @@ fn main() {
         KeySequence("Hello, world!").send();
     });
 
+    LKey.block_bind(|| KeySequence("j").send());
+    JKey.block_bind(|| {});
+
     // Call this to start listening for bound inputs.
     inputbot::handle_input_events();
 }
