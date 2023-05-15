@@ -144,6 +144,7 @@ pub enum MouseButton {
     RightButton,
     X1Button,
     X2Button,
+    MouseMove,
 
     #[strum(disabled)]
     OtherButton(u32),
@@ -214,6 +215,30 @@ impl MouseButton {
             .lock()
             .unwrap()
             .insert(self, Bind::BlockableBind(Arc::new(callback)));
+    }
+
+    pub fn mouse_move_bind<F: Fn(i32, i32) + Send + Sync + 'static>(self, callback: F) {
+        MOUSE_BINDS
+            .lock()
+            .unwrap()
+            .insert(self, Bind::MouseMoveBind(Arc::new(callback)));
+    }
+
+    pub fn mouse_block_bind<F: Fn(i32, i32) + Send + Sync + 'static>(self, callback: F) {
+        MOUSE_BINDS
+            .lock()
+            .unwrap()
+            .insert(self, Bind::MouseMoveBlockBind(Arc::new(callback)));
+    }
+
+    pub fn mouse_blockable_bind<F: Fn(i32, i32) -> BlockInput + Send + Sync + 'static>(
+        self,
+        callback: F,
+    ) {
+        MOUSE_BINDS
+            .lock()
+            .unwrap()
+            .insert(self, Bind::MouseMoveBlockableBind(Arc::new(callback)));
     }
 
     pub fn bind_all<F: Fn(MouseButton) + Send + Sync + Clone + 'static>(callback: F) {

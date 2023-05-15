@@ -143,6 +143,7 @@ unsafe extern "system" fn keybd_proc(code: c_int, w_param: WPARAM, l_param: LPAR
                         return 1;
                     }
                 }
+                _ => {}
             }
         }
     }
@@ -150,8 +151,13 @@ unsafe extern "system" fn keybd_proc(code: c_int, w_param: WPARAM, l_param: LPAR
 }
 
 unsafe extern "system" fn mouse_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+    // if w_param as u32 == WM_MOUSEMOVE {
+    //     print!("Mouse moved\n");
+    // }
     if MOUSE_BINDS.lock().unwrap().is_empty() {
         unset_hook(&*MOUSE_HHOOK);
+    } else if ((*(l_param as *const MSLLHOOKSTRUCT)).flags & LLMHF_INJECTED) != 0 {
+        CallNextHookEx(null_mut(), code, w_param, l_param);
     } else if let Some(event) = match w_param as u32 {
         WM_LBUTTONDOWN => Some(MouseButton::LeftButton),
         WM_RBUTTONDOWN => Some(MouseButton::RightButton),
@@ -164,9 +170,13 @@ unsafe extern "system" fn mouse_proc(code: c_int, w_param: WPARAM, l_param: LPAR
                 XBUTTON2 => Some(MouseButton::X2Button),
                 _ => None,
             }
-        }
+        },
+        WM_MOUSEMOVE => Some(MouseButton::MouseMove),
         _ => None,
     } {
+        if w_param as u32 == WM_MOUSEMOVE {
+            println!("X: {}, Y: {}", (*(l_param as *const MSLLHOOKSTRUCT)).pt.x, (*(l_param as *const MSLLHOOKSTRUCT)).pt.y);
+        }
         if let Some(bind) = MOUSE_BINDS.lock().unwrap().get_mut(&event) {
             match bind {
                 Bind::NormalBind(cb) => {
@@ -183,9 +193,51 @@ unsafe extern "system" fn mouse_proc(code: c_int, w_param: WPARAM, l_param: LPAR
                         return 1;
                     }
                 }
+                Bind::MouseMoveBind(cb) => {
+                    let cb = Arc::clone(cb);
+                    spawn(move || cb((*(l_param as *const MSLLHOOKSTRUCT)).pt.x, (*(l_param as *const MSLLHOOKSTRUCT)).pt.y));
+                }
+                Bind::MouseMoveBlockBind(cb) => {
+                    let cb = Arc::clone(cb);
+                    spawn(move || cb((*(l_param as *const MSLLHOOKSTRUCT)).pt.x, (*(l_param as *const MSLLHOOKSTRUCT)).pt.y));
+                    return 1;
+                }
+                Bind::MouseMoveBlockableBind(cb) => {
+                    if let BlockInput::Block = cb((*(l_param as *const MSLLHOOKSTRUCT)).pt.x, (*(l_param as *const MSLLHOOKSTRUCT)).pt.y) {
+                        return 1;
+                    }
+                }
             }
         };
-    }
+    }//else if let (Some(xPos), Some(yPos)) = (
+    //     match w_param as u32 {
+    //         WM_MOUSEMOVE => Some((*(l_param as *const MSLLHOOKSTRUCT)).pt.x),
+    //         _ => None,
+    //     },
+    //     match w_param as u32 {
+    //         WM_MOUSEMOVE => Some((*(l_param as *const MSLLHOOKSTRUCT)).pt.y),
+    //         _ => None,
+    //     },
+    // ) {
+    //     if let Some(bind) = MOUSE_BINDS.lock().unwrap().get_mut(&MouseButton::MouseMove) {
+    //         match bind {
+    //             Bind::NormalBind(cb) => {
+    //                 let cb = Arc::clone(cb);
+    //                 spawn(move || cb());
+    //             }
+    //             Bind::BlockBind(cb) => {
+    //                 let cb = Arc::clone(cb);
+    //                 spawn(move || cb());
+    //                 return 1;
+    //             }
+    //             Bind::BlockableBind(cb) => {
+    //                 if let BlockInput::Block = cb() {
+    //                     return 1;
+    //                 }
+    //             }
+    //         }
+    //     };
+    // }
     CallNextHookEx(null_mut(), code, w_param, l_param)
 }
 

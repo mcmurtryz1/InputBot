@@ -1,4 +1,5 @@
-use inputbot::{KeySequence, KeybdKey::*};
+use std::sync::{Arc, Mutex};
+use inputbot::{KeySequence, KeybdKey::*, MouseButton::*, MouseCursor};
 
 /// This example demonstrates sending sequences of key presses / characters via a KeySequence.
 /// This can be used, for example, to create a macro which types a specific string.
@@ -18,8 +19,22 @@ fn main() {
         KeySequence("Hello, world!").send();
     });
 
-    LKey.block_bind(|| KeySequence("j").send());
-    JKey.block_bind(|| {});
+    // LKey.block_bind(|| KeySequence("j").send());
+    // JKey.block_bind(|| {});
+
+    // MouseMove.block_bind(|| {
+    //     // println!("X1: {}, Y1: {}", MouseCursor::pos().0, MouseCursor::pos().1);
+    // });
+
+    MouseMove.mouse_block_bind( move |x, y| {
+        let current_x = MouseCursor::pos().0;
+        let current_y = MouseCursor::pos().1;
+
+        let x_diff = x - current_x;
+        let y_diff = y - current_y;
+
+        MouseCursor::move_rel(x_diff * 20, y_diff * 20);
+    });
 
     // Call this to start listening for bound inputs.
     inputbot::handle_input_events();
