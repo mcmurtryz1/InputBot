@@ -128,12 +128,14 @@ unsafe extern "system" fn keybd_proc(code: c_int, w_param: WPARAM, l_param: LPAR
                 (*(l_param as *const KBDLLHOOKSTRUCT)).vkCode,
             )))
         {
+            println!("{}", (*(l_param as *const KBDLLHOOKSTRUCT)).flags);
             match bind {
                 Bind::NormalBind(cb) => {
                     let cb = Arc::clone(cb);
                     spawn(move || cb());
                 }
                 Bind::BlockBind(cb) => {
+                    
                     let cb = Arc::clone(cb);
                     spawn(move || cb());
                     return 1;
