@@ -33,7 +33,7 @@ fn main() {
         let x_diff = x - current_x;
         let y_diff = y - current_y;
 
-        MouseCursor::move_rel(x_diff * 20, y_diff * 20);
+        // MouseCursor::move_rel(x_diff * 20, y_diff * 20);
     });
 
     // Call this to start listening for bound inputs.

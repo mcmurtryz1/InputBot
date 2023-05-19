@@ -150,7 +150,7 @@ unsafe extern "system" fn keybd_proc(code: c_int, w_param: WPARAM, l_param: LPAR
     CallNextHookEx(null_mut(), code, w_param, l_param)
 }
 
-unsafe extern "system" fn mouse_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+unsafe extern "system" fn mouse_proc(mut code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     // if w_param as u32 == WM_MOUSEMOVE {
     //     print!("Mouse moved\n");
     // }
@@ -174,9 +174,6 @@ unsafe extern "system" fn mouse_proc(code: c_int, w_param: WPARAM, l_param: LPAR
         WM_MOUSEMOVE => Some(MouseButton::MouseMove),
         _ => None,
     } {
-        if w_param as u32 == WM_MOUSEMOVE {
-            println!("X: {}, Y: {}", (*(l_param as *const MSLLHOOKSTRUCT)).pt.x, (*(l_param as *const MSLLHOOKSTRUCT)).pt.y);
-        }
         if let Some(bind) = MOUSE_BINDS.lock().unwrap().get_mut(&event) {
             match bind {
                 Bind::NormalBind(cb) => {
@@ -209,35 +206,7 @@ unsafe extern "system" fn mouse_proc(code: c_int, w_param: WPARAM, l_param: LPAR
                 }
             }
         };
-    }//else if let (Some(xPos), Some(yPos)) = (
-    //     match w_param as u32 {
-    //         WM_MOUSEMOVE => Some((*(l_param as *const MSLLHOOKSTRUCT)).pt.x),
-    //         _ => None,
-    //     },
-    //     match w_param as u32 {
-    //         WM_MOUSEMOVE => Some((*(l_param as *const MSLLHOOKSTRUCT)).pt.y),
-    //         _ => None,
-    //     },
-    // ) {
-    //     if let Some(bind) = MOUSE_BINDS.lock().unwrap().get_mut(&MouseButton::MouseMove) {
-    //         match bind {
-    //             Bind::NormalBind(cb) => {
-    //                 let cb = Arc::clone(cb);
-    //                 spawn(move || cb());
-    //             }
-    //             Bind::BlockBind(cb) => {
-    //                 let cb = Arc::clone(cb);
-    //                 spawn(move || cb());
-    //                 return 1;
-    //             }
-    //             Bind::BlockableBind(cb) => {
-    //                 if let BlockInput::Block = cb() {
-    //                     return 1;
-    //                 }
-    //             }
-    //         }
-    //     };
-    // }
+    }
     CallNextHookEx(null_mut(), code, w_param, l_param)
 }
 
